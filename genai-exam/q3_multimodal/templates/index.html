@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multimodal AI-Based Image Understanding System — Q.3</title>
+  <meta name="description" content="Multimodal generative AI practical: image understanding with structured JSON output, validation and evaluation.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top app-navbar">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#top">
+      <i class="bi bi-image-fill"></i>
+      <span>Multimodal AI-Based Image Understanding System</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+            aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="#analysis">1. Analyze</a></li>
+        <li class="nav-item"><a class="nav-link" href="#results">2. Results</a></li>
+        <li class="nav-item"><a class="nav-link" href="#prompt">3. Prompt design</a></li>
+        <li class="nav-item"><a class="nav-link" href="#evaluation">4. Evaluation</a></li>
+        <li class="nav-item"><a class="nav-link" href="#about">5. Docs &amp; tests</a></li>
+      </ul>
+      <span class="navbar-text ms-lg-3" id="navModeBadge"></span>
+    </div>
+  </div>
+</nav>
+
+<div id="modeBanner" class="mode-banner d-none" role="status" aria-live="polite"></div>
+
+<main class="container-xxl pb-5" id="top">
+
+  <!-- ================================================== header / honesty -->
+  <section class="card app-card border-0 mt-3">
+    <div class="card-body">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-7">
+          <h1 class="h3 mb-2">Multimodal AI-Based Image Understanding System</h1>
+          <p class="text-secondary mb-3">
+            A single Flask application that validates an uploaded image, generates a structured image
+            analysis (description, objects, activities, caption, summary, uncertainties), validates the
+            JSON against a fixed schema, and then evaluates the analysis for errors, omissions and
+            unsupported observations.
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="chip chip-blue"><i class="bi bi-diagram-3"></i> Vision-language model interface</span>
+            <span class="chip chip-green"><i class="bi bi-check2-square"></i> JSON schema validation</span>
+            <span class="chip chip-amber"><i class="bi bi-clipboard-check"></i> Output evaluation</span>
+            <span class="chip chip-grey"><i class="bi bi-wifi-off"></i> Works without paid credits</span>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="student-card">
+            <div class="student-card-title">Practical examination details</div>
+            <dl class="row mb-0 small">
+              <dt class="col-5">Student</dt><dd class="col-7">{{ student.name }}</dd>
+              <dt class="col-5">Course</dt><dd class="col-7">{{ student.course }}</dd>
+              <dt class="col-5">College</dt><dd class="col-7">{{ student.college }}</dd>
+              <dt class="col-5">Question</dt><dd class="col-7">Q.3 Multimodal Generative AI Application ({{ student.marks }})</dd>
+              <dt class="col-5">Build</dt><dd class="col-7">v{{ app_version }} · Python {{ python_version }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-3" id="healthRow">
+        <div class="col-md-3 col-6">
+          <div class="stat-box">
+            <div class="stat-label">Execution mode</div>
+            <div class="stat-value" id="healthMode">…</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-box">
+            <div class="stat-label">Provider</div>
+            <div class="stat-value" id="healthProvider">…</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-box">
+            <div class="stat-label">Model</div>
+            <div class="stat-value small" id="healthModel">…</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-box">
+            <div class="stat-label">Live analysis ready</div>
+            <div class="stat-value" id="healthLive">…</div>
+          </div>
+        </div>
+      </div>
+      <p class="small text-secondary mb-0 mt-2" id="healthReason"></p>
+    </div>
+  </section>
+
+  <!-- ========================================================== analyze -->
+  <section id="analysis" class="mt-4">
+    <h2 class="section-title">1. Image upload and analysis</h2>
+
+    <div class="row g-4">
+      <div class="col-xl-7">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header">
+            <i class="bi bi-cloud-arrow-up"></i> Upload an image
+            <span class="badge text-bg-light ms-2">JPG · JPEG · PNG · WEBP · max {{ max_mb }} MB</span>
+          </div>
+          <div class="card-body">
+            <div id="dropZone" class="drop-zone" tabindex="0" role="button"
+                 aria-label="Drop an image here or press Enter to choose a file">
+              <i class="bi bi-cloud-plus drop-icon"></i>
+              <p class="mb-1 fw-semibold">Drag &amp; drop an image here</p>
+              <p class="text-secondary small mb-3">or use the controls below to browse your device</p>
+              <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <button type="button" class="btn btn-primary btn-sm" id="browseBtn">
+                  <i class="bi bi-folder2-open"></i> Choose file
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="replaceBtn" disabled>
+                  <i class="bi bi-arrow-repeat"></i> Replace image
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="removeBtn" disabled>
+                  <i class="bi bi-x-circle"></i> Remove image
+                </button>
+              </div>
+              <input type="file" id="fileInput" class="d-none" accept="image/jpeg,image/png,image/webp,image/jpg,.jpg,.jpeg,.png,.webp">
+            </div>
+
+            <div id="validationBox" class="mt-3"></div>
+
+            <div id="previewWrap" class="d-none mt-3">
+              <div class="row g-3 align-items-start">
+                <div class="col-sm-5">
+                  <img id="previewImg" class="preview-img" alt="Preview of the selected image">
+                </div>
+                <div class="col-sm-7">
+                  <table class="table table-sm meta-table mb-0">
+                    <tbody>
+                      <tr><th>File name</th><td id="fileName">—</td></tr>
+                      <tr><th>Dimensions</th><td id="fileDims">—</td></tr>
+                      <tr><th>Size</th><td id="fileSize">—</td></tr>
+                      <tr><th>Type (detected)</th><td id="fileType">—</td></tr>
+                      <tr><th>SHA-256</th><td class="digest" id="fileDigest">—</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label fw-semibold" for="modeSelect">Execution mode</label>
+                <select class="form-select" id="modeSelect">
+                  <option value="auto">Automatic (use live AI when a key is configured, else offline demo)</option>
+                  <option value="offline">Offline Demo Mode (no API key needed)</option>
+                  <option value="live">Live AI Mode (requires an API key in .env)</option>
+                </select>
+                <div class="form-text" id="modeHelp"></div>
+              </div>
+              <div class="col-md-7">
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                  <button type="button" class="btn btn-success" id="analyzeBtn">
+                    <i class="bi bi-stars"></i> Analyze Image
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" id="resetBtn">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="loadingBox" class="loading-box d-none mt-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+              <span id="loadingText">Validating image and preparing the request…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-5">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header">
+            <i class="bi bi-collection"></i> Three required example images
+          </div>
+          <div class="card-body">
+            <p class="small text-secondary">
+              These three images ship with the project (original artwork, no third-party licence) so the
+              examiner can explore the whole flow without an API key.
+            </p>
+            <div id="sampleGallery" class="sample-gallery">
+              {% for sample in sample_list %}
+              <button type="button" class="sample-card" data-sample="{{ sample.key }}">
+                <img src="{{ sample.url }}" alt="{{ sample.title }}" loading="lazy">
+                <span class="sample-category">{{ sample.category }}</span>
+                <span class="sample-title">{{ sample.title.split('—')[-1].strip() }}</span>
+                <span class="sample-source">Illustrative sample data</span>
+              </button>
+              {% endfor %}
+            </div>
+            <div class="alert alert-warning small mb-0 mt-3">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <strong>{{ offline_banner }}</strong>
+              <div class="mt-1">{{ sample_data_notice }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================== results -->
+  <section id="results" class="mt-4">
+    <h2 class="section-title">2. Results dashboard</h2>
+    <div id="noResults" class="alert alert-secondary">
+      No analysis yet. Upload an image (or pick one of the three examples) and press
+      <strong>Analyze Image</strong>.
+    </div>
+
+    <div id="resultsContent" class="d-none">
+      <div class="card app-card mb-3">
+        <div class="card-header app-card-header d-flex flex-wrap gap-2 align-items-center">
+          <span><i class="bi bi-speedometer2"></i> Analysis summary</span>
+          <span class="ms-auto d-flex flex-wrap gap-2">
+            <span class="badge text-bg-primary" id="badgeMode">—</span>
+            <span class="badge text-bg-secondary" id="badgeProvider">—</span>
+            <span class="badge text-bg-dark" id="badgeModel">—</span>
+            <span class="badge text-bg-info" id="badgeLatency">—</span>
+            <span class="badge" id="badgeValidation">—</span>
+          </span>
+        </div>
+        <div class="card-body">
+          <div id="resultsNotice"></div>
+          <div class="row g-4">
+            <div class="col-lg-4">
+              <div class="panel-label">Original image</div>
+              <img id="resultImage" class="result-image" alt="The image that was analysed">
+              <table class="table table-sm meta-table mt-2 mb-0">
+                <tbody id="resultImageMeta"></tbody>
+              </table>
+            </div>
+            <div class="col-lg-8">
+              <div class="row g-3">
+                <div class="col-12">
+                  <div class="panel-label d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-card-text"></i> Detailed description</span>
+                    <button class="btn btn-outline-secondary btn-xs copy-btn" data-copy="rDescription"
+                            type="button"><i class="bi bi-clipboard"></i> Copy</button>
+                  </div>
+                  <p id="rDescription" class="panel-text"></p>
+                </div>
+                <div class="col-md-6">
+                  <div class="panel-label d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-chat-quote"></i> Caption</span>
+                    <button class="btn btn-outline-secondary btn-xs copy-btn" data-copy="rCaption"
+                            type="button"><i class="bi bi-clipboard"></i> Copy</button>
+                  </div>
+                  <p id="rCaption" class="panel-text"></p>
+                </div>
+                <div class="col-md-6">
+                  <div class="panel-label d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-journal-text"></i> Summary</span>
+                    <button class="btn btn-outline-secondary btn-xs copy-btn" data-copy="rSummary"
+                            type="button"><i class="bi bi-clipboard"></i> Copy</button>
+                  </div>
+                  <p id="rSummary" class="panel-text"></p>
+                </div>
+                <div class="col-md-6">
+                  <div class="panel-label"><i class="bi bi-activity"></i> Activities</div>
+                  <ul id="rActivities" class="list-plain"></ul>
+                </div>
+                <div class="col-md-6">
+                  <div class="panel-label"><i class="bi bi-question-diamond"></i> Uncertainties reported</div>
+                  <ul id="rUncertainties" class="list-plain"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="panel-label"><i class="bi bi-box-seam"></i> Important objects and visible attributes</div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle objects-table">
+                <thead>
+                  <tr><th style="width:18%">Object</th><th style="width:26%">Attributes</th><th>Evidence in the image</th></tr>
+                </thead>
+                <tbody id="rObjects"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="rGroundTruthBox" class="mt-3 d-none">
+            <div class="panel-label"><i class="bi bi-list-check"></i> Human ground-truth checklist for this sample image</div>
+            <ul id="rGroundTruth" class="list-plain small"></ul>
+          </div>
+
+          <div id="rSampleBox" class="alert alert-warning small d-none mt-3"></div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="card app-card h-100">
+            <div class="card-header app-card-header d-flex align-items-center">
+              <span><i class="bi bi-braces"></i> JSON output (raw model/offline result)</span>
+              <span class="ms-auto d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-xs copy-btn" data-copy="jsonView" type="button">
+                  <i class="bi bi-clipboard"></i> Copy JSON
+                </button>
+                <button class="btn btn-outline-primary btn-xs" id="downloadJsonBtn" type="button">
+                  <i class="bi bi-download"></i> Download JSON
+                </button>
+              </span>
+            </div>
+            <div class="card-body p-0">
+              <pre id="jsonView" class="json-view"></pre>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="card app-card h-100">
+            <div class="card-header app-card-header">
+              <i class="bi bi-shield-check"></i> JSON validation status
+            </div>
+            <div class="card-body">
+              <div id="validationStatus"></div>
+              <div class="d-flex flex-wrap gap-2 mt-3">
+                <button class="btn btn-outline-secondary btn-xs copy-btn" data-copy="validationStatus" type="button">
+                  <i class="bi bi-clipboard"></i> Copy validation report
+                </button>
+                <button class="btn btn-outline-primary btn-xs" id="downloadReportBtn" type="button">
+                  <i class="bi bi-file-earmark-text"></i> Download evaluation report (Markdown)
+                </button>
+                <button class="btn btn-outline-primary btn-xs" id="downloadReportJsonBtn" type="button">
+                  <i class="bi bi-filetype-json"></i> Download report (JSON)
+                </button>
+              </div>
+              <p class="small text-secondary mb-0 mt-3">
+                Schema validation proves the JSON is complete and well typed. It does <em>not</em> prove the
+                description is factually correct — that is what the evaluation stage is for.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================== prompt -->
+  <section id="prompt" class="mt-4">
+    <h2 class="section-title">3. Structured prompt engineering</h2>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header d-flex align-items-center">
+            <span><i class="bi bi-terminal"></i> Base prompt required by the assignment</span>
+            <button class="btn btn-outline-secondary btn-xs ms-auto copy-btn" data-copy="basePromptText" type="button">
+              <i class="bi bi-clipboard"></i> Copy
+            </button>
+          </div>
+          <div class="card-body">
+            <pre class="prompt-view" id="basePromptText">{{ base_prompt }}</pre>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header d-flex align-items-center">
+            <span><i class="bi bi-braces-asterisk"></i> Structured prompt actually sent in Live AI mode</span>
+            <button class="btn btn-outline-secondary btn-xs ms-auto copy-btn" data-copy="structuredPromptText"
+                    type="button"><i class="bi bi-clipboard"></i> Copy</button>
+          </div>
+          <div class="card-body">
+            <pre class="prompt-view" id="structuredPromptText">{{ structured_prompt }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-3">
+      <div class="col-lg-4">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header"><i class="bi bi-file-diff"></i> Basic prompt (for comparison)</div>
+          <div class="card-body">
+            <pre class="prompt-view small" id="basicPromptText">{{ basic_prompt }}</pre>
+            <p class="small text-secondary mb-0">
+              No schema, no honesty rules, no place for missing information: the shape of the answer changes
+              between runs and the model tends to fill every field even when the image shows nothing.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header"><i class="bi bi-arrow-left-right"></i> Basic vs structured prompt</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0 compare-table">
+                <thead>
+                  <tr><th style="width:20%">Aspect</th><th style="width:40%">Basic prompt</th><th>Structured prompt</th></tr>
+                </thead>
+                <tbody>
+                  {% for row in prompt_comparison %}
+                  <tr>
+                    <th>{{ row.aspect }}</th>
+                    <td>{{ row.basic }}</td>
+                    <td>{{ row.structured }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card app-card mt-3">
+      <div class="card-header app-card-header"><i class="bi bi-journal-code"></i> Required JSON schema, field rules and honest limits</div>
+      <div class="card-body">
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="panel-label">Required JSON object</div>
+            <pre class="json-view small">{{ json_example }}</pre>
+          </div>
+          <div class="col-lg-6">
+            <div class="panel-label">Validation rules enforced by validator.py</div>
+            <ul class="small mb-3">
+              {% for rule in schema_rules %}<li>{{ rule }}</li>{% endfor %}
+            </ul>
+            <div class="panel-label">Why explicit instructions help</div>
+            <p class="small mb-0">{{ prompt_notes }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= evaluation -->
+  <section id="evaluation" class="mt-4">
+    <h2 class="section-title">4. Image evaluation and manual review</h2>
+    <div class="card app-card">
+      <div class="card-header app-card-header d-flex flex-wrap gap-2 align-items-center">
+        <span><i class="bi bi-clipboard2-check"></i> Errors, omissions and unsupported observations</span>
+        <span class="ms-auto d-flex flex-wrap gap-2">
+          <button class="btn btn-sm btn-primary" id="evalBtn" type="button" disabled>
+            <i class="bi bi-search"></i> Run evaluation
+          </button>
+          <button class="btn btn-sm btn-outline-dark" id="aiReviewBtn" type="button" disabled
+                  title="Only available in Live AI Mode with an API key">
+            <i class="bi bi-robot"></i> Second-opinion AI review
+          </button>
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-secondary small mb-3" id="evalHint">
+          Analyse an image first. The evaluation combines deterministic text checks with (for the three bundled
+          examples) a manual comparison against a human ground-truth list.
+        </div>
+        <div id="evalIllustrative" class="alert alert-warning small d-none"></div>
+        <div id="evalCounts" class="d-flex flex-wrap gap-2 mb-3"></div>
+        <div id="evalDisclaimer" class="small text-secondary mb-3"></div>
+        <div id="evalFindings"></div>
+        <div id="aiReviewResult" class="mt-3"></div>
+
+        <hr>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold" for="newCategory">Category</label>
+            <select class="form-select form-select-sm" id="newCategory">
+              {% for category in categories %}
+              <option value="{{ category.key }}">{{ category.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold" for="newStatement">Statement (required)</label>
+            <input type="text" class="form-control form-control-sm" id="newStatement"
+                   placeholder="e.g. The caption mentions a cat that is not visible.">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold" for="newVisible">What is actually visible</label>
+            <input type="text" class="form-control form-control-sm" id="newVisible" placeholder="e.g. no animal is present">
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-sm btn-outline-primary w-100" id="addFindingBtn" type="button">
+              <i class="bi bi-plus-circle"></i> Add finding
+            </button>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="newWhy">Why it is a problem</label>
+            <input type="text" class="form-control form-control-sm" id="newWhy"
+                   placeholder="e.g. the object is not present, so the claim is unsupported">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold" for="newCorrection">Suggested correction</label>
+            <input type="text" class="form-control form-control-sm" id="newCorrection"
+                   placeholder="e.g. remove the sentence or describe only visible objects">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ about -->
+  <section id="about" class="mt-4">
+    <h2 class="section-title">5. How this maps to the question, plus test instructions</h2>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header"><i class="bi bi-list-check"></i> Requirements demonstrated</div>
+          <div class="card-body">
+            <ul class="small mb-0">
+              <li>Detailed description, objects + attributes, activities, caption, summary, uncertainties.</li>
+              <li>Offline demonstration mode that never claims to be a live model, and never attaches a sample
+                  description to a different image (exact SHA-256 match only).</li>
+              <li>Optional live vision-language provider (Anthropic Claude and Google Gemini) with credentials
+                  read from environment variables and complete error handling.</li>
+              <li>Real image validation: contents are decoded with Pillow, corrupted/oversized/empty files are rejected.</li>
+              <li>Separate validator module for JSON syntax + schema, and a separate evaluation module.</li>
+              <li>Manual review controls (confirm / reject / edit / add) and a downloadable report.</li>
+              <li>pytest suite with all external model calls mocked.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card app-card h-100">
+          <div class="card-header app-card-header"><i class="bi bi-terminal-fill"></i> Run and test locally</div>
+          <div class="card-body">
+            <pre class="code-view">python -m pip install -r requirements.txt
+python app.py                     # Offline Demo Mode
+python -m pytest -q               # run the automated tests</pre>
+            <p class="small text-secondary mb-2">Live AI mode (optional, needs a key):</p>
+            <pre class="code-view">copy .env.example .env
+# then edit .env:  AI_MODE=live  AI_PROVIDER=gemini  GEMINI_API_KEY=...
+python app.py</pre>
+            <p class="small mb-0">
+              Local URL: <a href="http://127.0.0.1:5000" target="_blank" rel="noreferrer">http://127.0.0.1:5000</a>
+              &nbsp;·&nbsp; Health check: <a href="/api/health" target="_blank" rel="noreferrer">/api/health</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <div class="container-xxl">
+    <div class="d-flex flex-wrap gap-3 justify-content-between small">
+      <span>{{ student.name }} · {{ student.college }}</span>
+      <span>Offline demo data is always labelled as illustrative · Live model output is never guaranteed correct</span>
+      <span>v{{ app_version }} · <a href="/api/health">/api/health</a></span>
+    </div>
+  </div>
+</footer>
+
+<div id="toast" class="app-toast d-none" role="status" aria-live="polite"></div>
+
+<script>
+  window.APP_CONFIG = {
+    mode: {{ mode_config.mode | tojson }},
+    provider: {{ (mode_config.provider or "") | tojson }},
+    model: {{ mode_config.model | tojson }},
+    liveReady: {{ mode_config.live_ready | tojson }},
+    reason: {{ mode_config.reason | tojson }},
+    offlineBanner: {{ offline_banner | tojson }},
+    sampleDataNotice: {{ sample_data_notice | tojson }},
+    unsupportedMessage: {{ unsupported_message | tojson }},
+    categories: {{ categories | tojson }},
+    statuses: {{ statuses | tojson }},
+    samples: {{ sample_list | tojson }},
+    maxMb: {{ max_mb | tojson }},
+    allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
